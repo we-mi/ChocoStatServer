@@ -1,0 +1,47 @@
+[
+  {
+    "RequestType": "GET",
+    "RequestURL": "/proc",
+    "RequestCommand": "Get-Process -ProcessName PowerShell -ErrorAction SilentlyContinue | Select-Object -Property ProcessName,Id -ErrorAction SilentlyContinue"
+  },
+  {
+    "RequestType": "GET",
+    "RequestURL": "/endpoint/status",
+    "RequestCommand": "return 1"
+  },
+  {
+    "RequestType": "GET",
+    "RequestURL": "/endpoint/routes",
+    "RequestCommand": "C:/Users/Michael/Documents/git/github.com/choco-stat-server/api/endPoints/GET/Invoke-GetRoutes.ps1"
+  },
+  {
+    "RequestType": "GET",
+    "RequestURL": "/api/stat",
+    "RequestCommand": "C:/Users/Michael/Documents/git/github.com/choco-stat-server/api/endPoints/GET/Get-ChocoStatComputerPackage.ps1"
+  },
+  {
+    "RequestType": "PUT",
+    "RequestURL": "/Service",
+    "RequestCommand": "C:/Users/Michael/Documents/git/github.com/choco-stat-server/api/endPoints/PUT/Invoke-GetProcess.ps1"
+  },
+  {
+    "RequestType": "POST",
+    "RequestURL": "/api/v1/computers",
+    "RequestCommand": "C:/Users/Michael/Documents/git/github.com/choco-stat-server/api/endPoints/PUT/Add-ChocoStatComputerPackage.ps1"
+  },
+  {
+    "RequestType": "GET",
+    "RequestURL": "^\/api\/v1\/computers$",
+    "RequestCommand": "C:/Users/Michael/Documents/git/github.com/choco-stat-server/api/endPoints/POST/Get-ChocoStatComputer.ps1"
+  },
+  {
+    "RequestType": "GET",
+    "RequestURL": "^\/api\/v1\/computers\/([0-9a-zA-Z]*)\/packages$",
+    "RequestCommand": "C:/Users/Michael/Documents/git/github.com/choco-stat-server/api/endPoints/GET/Get-ChocoStatComputerPackage.ps1"
+  },
+  {
+    "RequestType": "DELETE",
+    "RequestURL": "/data",
+    "RequestCommand": "C:/Users/Michael/Documents/git/github.com/choco-stat-server/api/endPoints/DELETE/Invoke-GetProcess.ps1"
+  }
+]
