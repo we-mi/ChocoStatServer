@@ -16,4 +16,4 @@ Export-ModuleMember -Function $Public.Basename
 
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Unrestricted -Force
 Remove-Module PSSQLite -ErrorAction SilentlyContinue
-Import-Module (Join-Path $PSScriptRoot "modules\PSSQLite\PSSQLITE.psd1") -ErrorAction Stop
+Import-Module -Name "..\PSSQLite\PSSQLite.psd1" -ErrorAction Stop

@@ -43,13 +43,17 @@ function Update-ChocoStatComputerPackage {
             }
 
             if ($null -eq $InstalledOn) {
-                $InstalledOn = $ComputerPackageObject.InstalledOn
+                if ($null -eq $ComputerPackageObject.InstalledOn) {
+                    $InstalledOn = [datetime]"1970-01-01"
+                } else {
+                    $InstalledOn = $ComputerPackageObject.InstalledOn
+                }
             }
         
-            $Query = "UPDATE Computers_Packages SET Version=@Version, Parameters=@Parameters, InstalledOn=@InstalledOn WHERE ComputerName=@ComputerName AND PackageName=@PackageName"
+            $Query = "UPDATE Computers_Packages SET Version=@Version, Parameters=@Parameters, InstalledOn=@InstalledOn WHERE ComputerID=@ComputerID AND PackageName=@PackageName"
 
             Invoke-SqliteQuery -Query $Query -Database $script:File -SqlParameters @{
-                ComputerName = $ComputerName
+                ComputerID = $ComputerPackageObject.ComputerID
                 PackageName = $PackageName
                 Version = $Version
                 Parameters = $Parameters

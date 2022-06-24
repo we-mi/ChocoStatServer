@@ -15,7 +15,10 @@ function New-ChocoStatServerDatabase {
     process {
 
         $createDBCode = {
-            $Query = "CREATE TABLE Computers (ComputerName varchar(255) NOT NULL PRIMARY KEY, LastContact DATETIME);"
+            $Query = "CREATE TABLE Tokens (UserName varchar(255) NOT NULL PRIMARY KEY, Token varchar(64) NOT NULL, Type varchar(50) NOT NULL, WhenCreated int(11) NOT NULL, Duration INTEGER NOT NULL);"
+            Invoke-SqliteQuery -Query $Query -Database $File
+
+            $Query = "CREATE TABLE Computers (ComputerID INTEGER NOT NULL PRIMARY KEY, ComputerName varchar(255) NOT NULL, LastContact DATETIME);"
             Invoke-SqliteQuery -Query $Query -Database $File
 
             $Query = "CREATE TABLE Packages (PackageName varchar(255) NOT NULL PRIMARY KEY);"
@@ -24,7 +27,7 @@ function New-ChocoStatServerDatabase {
             $Query = "CREATE TABLE Sources (SID INTEGER NOT NULL PRIMARY KEY, SourceName varchar(255) NOT NULL, SourceURL varchar(255) NOT NULL);"
             Invoke-SqliteQuery -Query $Query -Database $File
 
-            $Query = "CREATE TABLE Computers_Packages (ComputerName varchar(255) NOT NULL, PackageName varchar(255) NOT NULL, Version varchar(255) NOT NULL, Parameters varchar(255) NULL, InstalledOn varchar(255) NULL, PRIMARY KEY (ComputerName, PackageName) );"
+            $Query = "CREATE TABLE Computers_Packages (ComputerID INTEGER NOT NULL, PackageName varchar(255) NOT NULL, Version varchar(255) NOT NULL, Parameters varchar(255) NULL, InstalledOn varchar(255) NULL, PRIMARY KEY (ComputerID, PackageName) );"
             Invoke-SqliteQuery -Query $Query -Database $File
         }
 

@@ -1,0 +1,4 @@
+{
+  "DbFile": "Path\\To\\Your\\ChocoStatistics.db",
+  "ChocoStatDbModulePath": "Path\\To\\The\\Root\\Of\\Your\\Unzipped\\Project\\Folder\\modules\\ChocoStatDb\\ChocoStatDb.psd1"
+}
