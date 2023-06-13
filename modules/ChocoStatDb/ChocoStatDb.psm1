@@ -14,6 +14,5 @@ Foreach($import in @($Public + $Private)) {
 
 Export-ModuleMember -Function $Public.Basename
 
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Unrestricted -Force
 Remove-Module PSSQLite -ErrorAction SilentlyContinue
-Import-Module -Name "..\PSSQLite\PSSQLite.psd1" -ErrorAction Stop
+Import-Module -Name (Join-Path $PSScriptRoot "..\PSSQLite\PSSQLite.psd1") -ErrorAction Stop

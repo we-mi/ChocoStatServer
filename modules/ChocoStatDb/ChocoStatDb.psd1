@@ -71,7 +71,7 @@ Copyright = '(c) Michael Wenders. All rights reserved.'
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
     "New-ChocoStatServerDatabase"
-    "Connect-ChocoStatServerDatabase"
+    "Test-ComputerSecret"
 
     "New-ChocoStatServerToken"
     "Get-ChocoStatServerToken"
@@ -88,10 +88,24 @@ FunctionsToExport = @(
     "Update-ChocoStatPackage"
     "Remove-ChocoStatPackage"
 
+    "Get-ChocoStatUser"
+    "New-ChocoStatUser"
+    "Remove-ChocoStatUser"
+    "Update-ChocoStatUser"
+
+    "Get-ChocoStatApiToken"
+    "New-ChocoStatApiToken"
+    "Remove-ChocoStatApiToken"
+
     "Get-ChocoStatComputerPackage"
     "Add-ChocoStatComputerPackage"
     "Remove-ChocoStatComputerPackage"
     "Update-ChocoStatComputerPackage"
+
+    "Get-ChocoStatComputerSource"
+    "Add-ChocoStatComputerSource"
+    "Remove-ChocoStatComputerSource"
+    "Update-ChocoStatComputerSource"
 )
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

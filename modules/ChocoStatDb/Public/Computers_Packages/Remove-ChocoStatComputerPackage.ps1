@@ -8,18 +8,18 @@ function Remove-ChocoStatComputerPackage {
         This cmdlet does not check if the package was linked to the computer beforehand
     .EXAMPLE
         Remove-ChocoStatComputerPackage -ComputerID 5 -PackageName "firefox"
-        
+
         Removes firefox from computer with ID 5
     .EXAMPLE
         Remove-ChocoStatComputerPackage -ComputerName "foo.example.org" -PackageName "firefox"
-        
+
         Removes firefox from computer with name "foo.example.org"
     .EXAMPLE
         Get-ChocoStatComputer -ComputerName "%.example.org" | Remove-ChocoStatComputerPackage -PackageName "firefox"
 
         Removes firefox from all computers which names end with '.example.org'
     #>
-    
+
     [CmdletBinding()]
     [OutputType([Object])]
 
@@ -27,31 +27,15 @@ function Remove-ChocoStatComputerPackage {
         # ComputerID to remove the package from
         [Parameter(
             Mandatory,
-            ParameterSetName = "ComputerID",
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName,
-            Position = 0
-        )]
-        [Int[]]
-        $ComputerID,
-
-        # ComputerName to remove the package from (can contain SQL wildcards)
-        [Parameter(
-            Mandatory,
-            ParameterSetName = "ComputerName",
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName,
-            Position = 0
+            ValueFromPipelineByPropertyName
         )]
         [String[]]
-        $ComputerName,
+        $ComputerID,
 
-        # One or more PackageNames to search for (can contain SQL wildcards)
+        # Package to remove from computer
         [Parameter(
             Mandatory,
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName,
-            Position = 1
+            ValueFromPipelineByPropertyName
         )]
         [String]
         $PackageName,
@@ -59,25 +43,30 @@ function Remove-ChocoStatComputerPackage {
         [Parameter()]
         [Bool]
         $Confirm = $True,
-        
+
         # Dont actually do anything
         [Parameter()]
         [Switch]
         $WhatIf
     )
 
+    begin {
+        $DbFile = Get-ChocoStatDBFile
+    }
+
     process {
 
         $Query = "DELETE FROM Computers_Packages WHERE PackageName=@PackageName"
 
-        # we need the ComputerID, so get it with Get-ChocoStatComputer, if a ComputerName was provided
-        if ($PSCmdlet.ParameterSetName -eq "ComputerName") {
-            $ComputerID = Get-ChocoStatComputer -ComputerName $ComputerName | Select-Object -ExpandProperty ComputerID
-        }        
+        $QueryIDs = [array]($ComputerID | ForEach-Object { " ComputerID=$_" })
 
-        $Query += " AND ("
-        $Query += ($ComputerID | ForEach-Object { " ComputerID LIKE '$_'" } ) -join ' OR '
-        $Query += " )"
+        if ($QueryIDs.Count -gt 0) {
+            $Query += " AND ("
+            $Query += $QueryIDs -join ' OR '
+            $Query += " )"
+        }
+
+        $Query += ";"
 
         Write-Verbose "Remove-ChocoStatComputerPackage: Execute SQL Query: $Query"
 
@@ -91,12 +80,12 @@ function Remove-ChocoStatComputerPackage {
             } else { $GoAhead = $True }
 
             if ($GoAhead) {
-                Invoke-SqliteQuery -Query $Query -Database $script:File -SqlParameters @{
+                Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
                     PackageName = $PackageName
                 }
             } else {
                 Write-Host -ForegroundColor Magenta "You chose not to remove the package from the computers"
             }
-        }        
-    }    
+        }
+    }
 }

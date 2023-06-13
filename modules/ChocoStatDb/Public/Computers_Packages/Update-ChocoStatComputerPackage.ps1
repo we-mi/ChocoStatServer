@@ -3,15 +3,27 @@ function Update-ChocoStatComputerPackage {
     [OutputType([Object[]])]
 
     param (
-        [Parameter(Mandatory)]        
+        # ComputerID for adding the packages
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]
         [String]
-        $ComputerName,
+        $ComputerID,
 
-        [Parameter(Mandatory)]        
+        # A PackageName which should be added to the computer
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]
         [String]
         $PackageName,
 
-        [Parameter(Mandatory)]
+        # The version of the package
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]
         [String]
         $Version,
 
@@ -24,13 +36,18 @@ function Update-ChocoStatComputerPackage {
         $InstalledOn
     )
 
+    begin {
+        $DbFile = Get-ChocoStatDBFile
+    }
+
     process {
 
-        $ComputerPackageObject = Get-ChocoStatComputerPackage -ComputerName $ComputerName | Where-Object { $_.PackageName -eq $PackageName }
+        $ComputerPackageObject = Get-ChocoStatComputerPackage -ComputerID $ComputerID -PackageName $PackageName
 
         if ($ComputerPackageObject) {
 
             if ([String]::IsNullOrWhiteSpace($Version) -and [String]::IsNullOrWhiteSpace($Parameters) -and $null -eq $InstalledOn) {
+                Write-Warning "Nothing to update"
                 return $null
             }
 
@@ -49,10 +66,10 @@ function Update-ChocoStatComputerPackage {
                     $InstalledOn = $ComputerPackageObject.InstalledOn
                 }
             }
-        
+
             $Query = "UPDATE Computers_Packages SET Version=@Version, Parameters=@Parameters, InstalledOn=@InstalledOn WHERE ComputerID=@ComputerID AND PackageName=@PackageName"
 
-            Invoke-SqliteQuery -Query $Query -Database $script:File -SqlParameters @{
+            Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
                 ComputerID = $ComputerPackageObject.ComputerID
                 PackageName = $PackageName
                 Version = $Version
@@ -61,7 +78,7 @@ function Update-ChocoStatComputerPackage {
             }
         } else {
             $splat = @{
-                ComputerName = $ComputerName
+                ComputerID = $ComputerID
                 PackageName = $PackageName
                 Version = $Version
             }
@@ -76,7 +93,7 @@ function Update-ChocoStatComputerPackage {
 
             Add-ChocoStatComputerPackage @splat
         }
-    
+
     }
-    
+
 }

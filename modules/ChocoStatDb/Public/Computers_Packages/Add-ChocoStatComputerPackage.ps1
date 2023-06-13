@@ -1,3 +1,5 @@
+# TODO:
+#  Check if package already added -> helpful error message and use Update-ChocoStatComputerPackage
 function Add-ChocoStatComputerPackage {
     <#
     .SYNOPSIS
@@ -12,43 +14,31 @@ function Add-ChocoStatComputerPackage {
         Adds the package "vlc" in version "1.0" to the computer "foo.example.org"
     #>
 
-    [CmdletBinding(DefaultParameterSetName = "ComputerName")]
+    [CmdletBinding()]
     [OutputType([Object[]])]
 
     param (
-        # a ComputerIDs to add the packages
+        # ComputerID for adding the packages
         [Parameter(
             Mandatory,
-            ParameterSetName = "ComputerID",
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName,
-            Position = 0
-        )]
-        [Int]
-        $ComputerID,
-
-        # a ComputerName to add the packages (can contain SQL wildcards)
-        [Parameter(
-            Mandatory,
-            ParameterSetName = "ComputerName",
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName,
-            Position = 0
+            ValueFromPipelineByPropertyName
         )]
         [String]
-        $ComputerName,
+        $ComputerID,
 
         # A PackageName which should be added to the computer
         [Parameter(
             Mandatory,
-            ValueFromPipelineByPropertyName,
-            Position = 1
+            ValueFromPipelineByPropertyName
         )]
         [String]
         $PackageName,
 
         # The version of the package
-        [Parameter(Mandatory)]
+        [Parameter(
+            Mandatory,
+            ValueFromPipelineByPropertyName
+        )]
         [String]
         $Version,
 
@@ -68,23 +58,22 @@ function Add-ChocoStatComputerPackage {
         $WhatIf
     )
 
+    begin {
+        $DbFile = Get-ChocoStatDBFile
+    }
+
     process {
 
-        if ($ComputerName) { # find related ComputerID
-            $ComputerObject = Get-ChocoStatComputer -ComputerName $ComputerName
-        } else { # find with ID
-            $ComputerObject = Get-ChocoStatComputer -ComputerID $ComputerID
-        }
+        $ComputerObject = Get-ChocoStatComputer -ComputerID $ComputerID -Packages
 
         if ($null -eq $ComputerObject) {
             Throw "Computer with ID '$ComputerID' does not exist"
-        }        
-
-        $PackageObject = Get-ChocoStatPackage -PackageName $PackageName
-        if ($null -eq $PackageObject) {
-            Throw "Package with Name '$PackageName' does not exist"
         }
-        
+
+        if ($ComputerObject.Packages.PackageName -contains $PackageName) {
+            Throw "Package '$PackageName' already attached to computer with ID '$ComputerID'"
+        }
+
         $Query = "INSERT INTO Computers_Packages (ComputerID, PackageName, Version, Parameters, InstalledOn) VALUES (@ComputerID, @PackageName, @Version, @Parameters, @InstalledOn)"
         Write-Verbose "Add-ChocoStatComputerPackage: Execute SQL Query: $Query"
 
@@ -92,7 +81,7 @@ function Add-ChocoStatComputerPackage {
             Write-Host -ForegroundColor Magenta "WhatIf: Would add package '$PackageName' to computer with ID '$ComputerID'"
         } else {
 
-            Invoke-SqliteQuery -Query $Query -Database $script:File -SqlParameters @{
+            Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
                 ComputerID = $ComputerObject.ComputerID
                 PackageName = $PackageName
                 Version = $Version
@@ -100,5 +89,5 @@ function Add-ChocoStatComputerPackage {
                 InstalledOn = $InstalledOn
             }
         }
-    }    
+    }
 }

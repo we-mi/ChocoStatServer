@@ -3,8 +3,8 @@ function Update-ChocoStatComputer {
     .SYNOPSIS
         Updates a computer in the database
     .DESCRIPTION
-        Can alter the name of the computer. The LastContact-Datetime is always updated, but you can specify a date instead of the current date
-        If the computer you wish to update does not exist yet, you can enforce its creation with the '-Force' parameter. You must provide the computername for the creation, the ComputerID you searched for will then be ignored
+        Can alter the name of the computer and reset the Secret (password). The LastContact-Datetime is always updated, but you can specify a date instead of the current date
+        If the computer you wish to update does not exist yet, you can enforce its creation with the '-Force' parameter. You must provide the computername and a password for the creation, the ComputerID you searched for will then be ignored
     .NOTES
         This cmdlet will throw an error if a new computer should be created and the name does already exist. Use 'New-ChocoStatComputer' with the '-Force' parameter instead
     .EXAMPLE
@@ -20,7 +20,7 @@ function Update-ChocoStatComputer {
 
     param (
         # ID of the computer. Will be ignored if a new computer shall be created (see Description)
-        [Parameter(Mandatory)]        
+        [Parameter(Mandatory)]
         [Int]
         $ComputerID,
 
@@ -28,6 +28,11 @@ function Update-ChocoStatComputer {
         [Parameter()]
         [String]
         $ComputerName,
+
+        # New secret (password) of the computer
+        [Parameter()]
+        [String]
+        $Secret,
 
         # Date of the lastcontact with the server. Will always be updated. If not provided the current datetime is saved
         [Parameter()]
@@ -50,14 +55,18 @@ function Update-ChocoStatComputer {
         $WhatIf
     )
 
+    begin {
+        $DbFile = Get-ChocoStatDBFile
+    }
+
     process {
 
-        if ($null -eq $ComputerName -and $null -eq $LastContact) {
+        if ( [String]::IsNullOrWhiteSpace($ComputerName) -and [String]::IsNullOrWhiteSpace($Secret) -and $null -eq $LastContact) {
             Throw "Nothing to insert or update. Gimme some data"
         }
 
         $ComputerObject = Get-ChocoStatComputer -ComputerID $ComputerID
-        
+
         # always set LastContact to the current date, no matter if the computer exists or not
         if ($null -eq $LastContact) {
             $LastContact = Get-Date
@@ -71,41 +80,61 @@ function Update-ChocoStatComputer {
                 $Computername = $ComputerObject.ComputerName
             }
 
-            $Query = "UPDATE Computers SET LastContact=@LastContact,ComputerName=@ComputerName WHERE ComputerID=@ComputerID;"
-            Write-Debug -Message "Update-ChocoStatComputer: Execute SQL Query: $Query"
+            $Query = "UPDATE Computers SET LastContact=@LastContact"
+            if ( -not [String]::IsNullOrWhiteSpace($ComputerName) ) {
+                $Query += ",ComputerName=@ComputerName"
+            }
+            $Query += " WHERE ComputerID=@ComputerID;"
+
+            Write-Verbose -Message "Update-ChocoStatComputer: Execute SQL Query: $Query"
             if ($WhatIf.IsPresent) {
                 Write-Host -ForegroundColor Magenta "WhatIf: Would update computer with ID '$ComputerID'"
             } else {
-                Invoke-SqliteQuery -Query $Query -Database $script:File -SqlParameters @{
+                Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
                     ComputerID = $ComputerID
                     ComputerName = $ComputerName
+                    HashedPassword = Get-Hash -InputString $Secret
                     LastContact = $LastContact
                 }
             }
 
-            if ($PassThru.IsPresent) {
-                Get-ChocoStatComputer -ComputerID $ComputerID
+            if (-not [String]::IsNullOrWhiteSpace($Secret)) {
+                $Query = "UPDATE ComputerPasswords SET HashedPassword=@HashedPassword WHERE ComputerID=@ComputerID;"
+
+                Write-Verbose -Message "Update-ChocoStatComputer: Execute SQL Query: $Query"
+                if ($WhatIf.IsPresent) {
+                    Write-Host -ForegroundColor Magenta "WhatIf: Would update computer with ID '$ComputerID'"
+                } else {
+                    Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
+                        ComputerID = $ComputerID
+                        HashedPassword = Get-Hash -InputString $Secret
+                    }
+                }
             }
 
-        } else { # create new object (needs -Force and -ComputerName at least)
+            if ($PassThru.IsPresent) {
+                Get-ChocoStatComputer -ComputerID $ComputerID -Packages
+            }
+
+        } else { # create new object (needs -Force, -ComputerName and -Secret at least)
             Write-Verbose "Update-ChocoStatComputer: Computer with ID '$ComputerID' was not found. Check if we should enforce its creation"
             if (-not $Force.IsPresent) {
                 Throw "Computer with ID '$ComputerID' does not exist. Use -Force to create it nevertheless"
             }
-            if ( [String]::IsNullOrWhiteSpace($ComputerName) ) {
-                Throw "Creating a computer requires a computername"
+            if ( [String]::IsNullOrWhiteSpace($ComputerName) -and [String]::IsNullOrWhiteSpace($Secret) ) {
+                Throw "Creating a computer requires a computername and a secret"
             }
 
             if ($WhatIf.IsPresent) {
                 Write-Host -ForegroundColor Magenta "WhatIf: Would create new computer with name '$ComputerName'"
             } else {
                 if ($PassThru.IsPresent) {
-                    New-ChocoStatComputer -ComputerName $ComputerName -LastContact $LastContact -PassThru
+                    New-ChocoStatComputer -ComputerName $ComputerName -Secret $Secret -LastContact $LastContact -PassThru
                 } else {
-                    New-ChocoStatComputer -ComputerName $ComputerName -LastContact 
+                    New-ChocoStatComputer -ComputerName $ComputerName -Secret $Secret
                     $LastContact
                 }
             }
-        }        
+        }
     }
 }

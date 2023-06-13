@@ -33,13 +33,13 @@ Copyright = '(c) Michael Wenders. All rights reserved.'
 Description = 'Module for deploying and starting the Chocolatey Statistics Server ("ChocoStatServer"). This is an unofficial project and is not related to chocolatey.org'
 
 # Minimum version of the PowerShell engine required by this module
-# PowerShellVersion = ''
+PowerShellVersion = '7.0'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''
 
 # Minimum version of the PowerShell host required by this module
-# PowerShellHostVersion = ''
+#PowerShellHostVersion = ''
 
 # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
 # DotNetFrameworkVersion = ''
@@ -51,7 +51,11 @@ Description = 'Module for deploying and starting the Chocolatey Statistics Serve
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-# RequiredModules = @()
+RequiredModules = @(
+    ".\modules\ChocoStatDb\ChocoStatDb.psd1"
+    ".\modules\PSSQLite\PSSQLite.psd1"
+    ".\modules\Pode\2.8.0\Pode.psd1"
+)
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -84,7 +88,7 @@ AliasesToExport = '*'
 # DscResourcesToExport = @()
 
 # List of all modules packaged with this module
-# ModuleList = @()
+#ModuleList = @("pode","chocostatdb","pssqlite")
 
 # List of all files packaged with this module
 # FileList = @()

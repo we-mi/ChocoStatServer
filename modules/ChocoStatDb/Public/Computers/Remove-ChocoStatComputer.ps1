@@ -8,37 +8,40 @@ function Remove-ChocoStatComputer {
         This cmdlet does not check if the computer exists beforehand.
     .EXAMPLE
         Remove-ChocoStatComputer -ComputerID 5
-        
+
         Removes the computer with the ID 5
     #>
-    
+
     [CmdletBinding()]
     [OutputType([Object])]
 
     param (
         [Parameter(
             Mandatory,
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName,
-            Position = 0
-        )]        
-        [Int[]]
+            ValueFromPipelineByPropertyName
+        )]
+        [String[]]
         $ComputerID,
 
         [Parameter()]
         [Bool]
         $Confirm = $True,
-        
+
         # Dont actually do anything
         [Parameter()]
         [Switch]
         $WhatIf
     )
 
+    begin {
+        $DbFile = Get-ChocoStatDBFile
+    }
+
     process {
 
         foreach ($singleComputer in $ComputerID) {
-            $Query = "DELETE FROM Computers WHERE ComputerID=@singleComputer;"
+            $Query = "DELETE FROM Computers WHERE ComputerID=@singleComputer; DELETE FROM Computers_Packages WHERE ComputerID=@singleComputer; DELETE FROM Computers_Sources WHERE ComputerID=@singleComputer"
+
             Write-Verbose "Remove-ChocoStatComputer: Execute SQL Query: $Query"
 
             if ($WhatIf.IsPresent) {
@@ -51,7 +54,7 @@ function Remove-ChocoStatComputer {
                 } else { $GoAhead = $True }
 
                 if ($GoAhead) {
-                    Invoke-SqliteQuery -Query $Query -Database $script:File -SqlParameters @{
+                    Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
                         singleComputer = $singleComputer
                     }
                 } else {
@@ -59,5 +62,5 @@ function Remove-ChocoStatComputer {
                 }
             }
         }
-    }    
+    }
 }

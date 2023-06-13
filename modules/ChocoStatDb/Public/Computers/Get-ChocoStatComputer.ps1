@@ -3,10 +3,12 @@ function Get-ChocoStatComputer {
     .SYNOPSIS
         Lists computers in the database depending on the filters
     .DESCRIPTION
+        Lists computers in the database including packages and sources
+    .NOTES
         The output can be filtered by one or more ComputerIDs _OR_ one or more ComputerNames which might contain SQL-Wildcards
     .EXAMPLE
         Get-ChocoStatComputer
-        
+
         Lists all computers in the database
     .EXAMPLE
         Get-ChocoStatComputer -ComputerID 5
@@ -25,7 +27,7 @@ function Get-ChocoStatComputer {
 
         Lists all computers which ends with ".example.org" or which contains the word foo
     #>
-    
+
     [CmdletBinding(DefaultParameterSetName="ComputerName")]
     [OutputType([Object[]])]
 
@@ -33,40 +35,70 @@ function Get-ChocoStatComputer {
         # One or more ComputerIDs to search for
         [Parameter(
             ParameterSetName = "ComputerID",
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName,
-            Position = 0
+            ValueFromPipelineByPropertyName
         )]
-        [Int[]]
+        [ValidateNotNullOrEmpty()]
+        [String[]]
         $ComputerID,
 
         # One or more ComputerNames to search for (can contain SQL wildcards)
         [Parameter(
             ParameterSetName = "ComputerName",
-            ValueFromPipeline,
-            ValueFromPipelineByPropertyName,
-            Position = 0
+            ValueFromPipelineByPropertyName
         )]
+        [ValidateNotNullOrEmpty()]
         [String[]]
-        $ComputerName=@('%')
+        $ComputerName=@('%'),
+
+        # Should the search include package information for computers?
+        [Parameter()]
+        [switch]
+        $Packages,
+
+        # Should the search include source information for computers?
+        [Parameter()]
+        [switch]
+        $Sources
     )
+
+    begin {
+        $DbFile = Get-ChocoStatDBFile
+        $Query = "SELECT * FROM Computers"
+    }
 
     process {
 
-        $Query = "SELECT * FROM Computers WHERE"
+        $QueryFilters = @()
         if ($ComputerID) {
-            $Query += ($ComputerID | ForEach-Object { " ComputerID=$_" } ) -join ' OR '
+            $QueryFilters += $ComputerID | ForEach-Object { "ComputerID = $_" }
         } elseif ($ComputerName) {
-            $Query += ($ComputerName | ForEach-Object { " ComputerName LIKE '$_'" } ) -join ' OR '
+            $QueryFilters += $ComputerName | ForEach-Object { "ComputerName LIKE '$_'" }
         }
+    }
 
+    end {
+        if ($QueryFilters.Count -gt 0) {
+            $Query += " WHERE "
+            $Query += $QueryFilters -join ' OR '
+        }
         $Query += ";"
 
         Write-Verbose "Get-ChocoStatComputer: Execute SQL Query: $Query"
 
-        Invoke-SqliteQuery -Query $Query -Database $script:File -SqlParameters @{
-            ComputerID = $ComputerID
-            ComputerName = $ComputerName
+        $result = Invoke-SqliteQuery -Query $Query -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}
+
+        if ($Packages.IsPresent) {
+            foreach ($computer in $result) {
+                $computer | Add-Member -MemberType NoteProperty -Name Packages -Value (Get-ChocoStatComputerPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version)
+            }
         }
-    }    
+
+        if ($Sources.IsPresent) {
+            foreach ($computer in $result) {
+                $computer | Add-Member -MemberType NoteProperty -Name Sources -Value (Get-ChocoStatComputerSource -ComputerID $computer.ComputerID | Select-Object SourceName,SourceURL,Enabled,Priority,ByPassProxy,SelfService,AdminOnly)
+            }
+        }
+
+        return $result
+    }
 }
