@@ -125,7 +125,7 @@ function Start-Choco { # implement the pschoco module from https://gitlab.com/Pa
             $ChocoEXE = "roco"
         }
 
-        Write-Host "Using $ChocoEXE"
+        Write-Verbose "Using $ChocoEXE"
     }
 
     process {
@@ -142,11 +142,23 @@ function Start-Choco { # implement the pschoco module from https://gitlab.com/Pa
 
             '^(search|list|find)$' {
                 & $ChocoEXE $command @options | Select-String -Pattern '^([\w-.]+) ([\d.]+)' | ForEach-Object {
-                    [PSCustomObject]@{
+
+                    $package = [PSCustomObject]@{
                         PackageName = $_.matches.groups[1].value
                         Version = $_.matches.groups[2].value
+                        InstalledOn = $null
                     }
+
+                    if ($command -eq "list" -and ($options -contains "--local-only" -or $options -contains "--lo") ) {
+                        $nupkg = Get-Item -Path (Join-Path $env:ProgramData "chocolatey\lib\$($package.PackageName)\$($package.PackageName).nupkg")
+
+                        $package.InstalledOn = $nupkg.CreationTime
+                    }
+
+                    $package
+
                 }
+
             }
 
             '^(source[s]*)$' {

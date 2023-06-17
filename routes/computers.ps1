@@ -111,7 +111,7 @@
 
         # if we got to this point we can import a new computer and hopefully attach packages and sources to it without getting syntax errors
         try {
-            $ComputerSecret = Get-Random #TODO: better password generation
+            $ComputerSecret = Get-RandomPassword -Length 64
             $computer = New-ChocoStatComputer -ComputerName $WebEvent.Data.ComputerName -Secret $ComputerSecret -PassThru
         } catch {
             Write-Host $_
@@ -121,7 +121,11 @@
 
         foreach ($package in $WebEvent.Data.Packages) {
             try {
-                Add-ChocoStatComputerPackage -ComputerID $computer.ComputerId -PackageName $package.PackageName -Version $package.Version
+                if ( $package.InstalledOn -is [DateTime] ) {
+                    Add-ChocoStatComputerPackage -ComputerID $computer.ComputerId -PackageName $package.PackageName -Version $package.Version -InstalledOn $package.InstalledOn
+                } else {
+                    Add-ChocoStatComputerPackage -ComputerID $computer.ComputerId -PackageName $package.PackageName -Version $package.Version
+                }
             } catch {
                 Write-Host $_
                 Set-PodeResponseStatus -Code 500 -Description "Error while attaching package '$($package)' to new computer '$($WebEvent.Data.ComputerName)': $_" -Exception $_

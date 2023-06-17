@@ -89,7 +89,7 @@ function Get-ChocoStatComputer {
 
         if ($Packages.IsPresent) {
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name Packages -Value (Get-ChocoStatComputerPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version)
+                $computer | Add-Member -MemberType NoteProperty -Name Packages -Value (Get-ChocoStatComputerPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version,InstalledOn)
             }
         }
 

@@ -49,8 +49,9 @@ function Add-ChocoStatComputerPackage {
 
         # The date the package was installed or updated to
         [Parameter()]
+        [AllowNull()]
         [datetime]
-        $InstalledOn,
+        $InstalledOn = "01.01.1970 00:00:00",
 
         # Dont actually do anything
         [Parameter()]
