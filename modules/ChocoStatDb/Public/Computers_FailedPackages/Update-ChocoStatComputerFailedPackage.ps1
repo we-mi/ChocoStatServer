@@ -1,9 +1,9 @@
-function Update-ChocoStatComputerPackage {
+function Update-ChocoStatComputerFailedPackage {
     [CmdletBinding()]
     [OutputType([Object[]])]
 
     param (
-        # ComputerID for adding the packages
+        # ComputerID for adding the FailedPackages
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -11,7 +11,7 @@ function Update-ChocoStatComputerPackage {
         [Int]
         $ComputerID,
 
-        # A PackageName which should be added to the computer
+        # A FailedPackageName which should be added to the computer
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -20,7 +20,7 @@ function Update-ChocoStatComputerPackage {
         [String]
         $PackageName,
 
-        # The version of the package
+        # The version of the FailedPackage
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -36,7 +36,7 @@ function Update-ChocoStatComputerPackage {
 
         [Parameter()]
         [datetime]
-        $InstalledOn
+        $FailedOn
     )
 
     begin {
@@ -45,39 +45,39 @@ function Update-ChocoStatComputerPackage {
 
     process {
 
-        $ComputerPackageObject = Get-ChocoStatComputerPackage -ComputerID $ComputerID -PackageName $PackageName
+        $ComputerFailedPackageObject = Get-ChocoStatComputerFailedPackage -ComputerID $ComputerID -PackageName $PackageName
 
-        if ($ComputerPackageObject) {
+        if ($ComputerFailedPackageObject) {
 
-            if ([String]::IsNullOrWhiteSpace($Version) -and [String]::IsNullOrWhiteSpace($Parameters) -and $null -eq $InstalledOn) {
+            if ([String]::IsNullOrWhiteSpace($Version) -and [String]::IsNullOrWhiteSpace($Parameters) -and $null -eq $FailedOn) {
                 Write-Warning "Nothing to update"
                 return $null
             }
 
             if ([String]::IsNullOrWhiteSpace($Version)) {
-                $Version = $ComputerPackageObject.Version
+                $Version = $ComputerFailedPackageObject.Version
             }
 
             if ([String]::IsNullOrWhiteSpace($Parameters)) {
-                $Parameters = $ComputerPackageObject.Parameters
+                $Parameters = $ComputerFailedPackageObject.Parameters
             }
 
-            if ($null -eq $InstalledOn) {
-                if ($null -eq $ComputerPackageObject.InstalledOn) {
-                    $InstalledOn = [datetime]"1970-01-01"
+            if ($null -eq $FailedOn) {
+                if ($null -eq $ComputerFailedPackageObject.FailedOn) {
+                    $FailedOn = [datetime]"1970-01-01"
                 } else {
-                    $InstalledOn = $ComputerPackageObject.InstalledOn
+                    $FailedOn = $ComputerFailedPackageObject.FailedOn
                 }
             }
 
-            $Query = "UPDATE Computers_Packages SET Version=@Version, Parameters=@Parameters, InstalledOn=@InstalledOn WHERE ComputerID=@ComputerID AND PackageName=@PackageName"
+            $Query = "UPDATE Computers_FailedPackages SET Version=@Version, Parameters=@Parameters, FailedOn=@FailedOn WHERE ComputerID=@ComputerID AND PackageName=@PackageName"
 
             Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
-                ComputerID = $ComputerPackageObject.ComputerID
+                ComputerID = $ComputerFailedPackageObject.ComputerID
                 PackageName = $PackageName
                 Version = $Version
                 Parameters = $Parameters
-                InstalledOn = $InstalledOn
+                FailedOn = $FailedOn
             }
         } else {
             $splat = @{
@@ -90,11 +90,11 @@ function Update-ChocoStatComputerPackage {
                 $splat.Parameters = $Parameters
             }
 
-            if ($null -ne $InstalledOn) {
-                $splat.InstalledOn = $InstalledOn
+            if ($null -ne $FailedOn) {
+                $splat.FailedOn = $FailedOn
             }
 
-            Add-ChocoStatComputerPackage @splat
+            Add-ChocoStatComputerFailedPackage @splat
         }
 
     }

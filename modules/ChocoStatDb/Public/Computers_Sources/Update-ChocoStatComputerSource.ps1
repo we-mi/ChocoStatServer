@@ -8,7 +8,7 @@ function Update-ChocoStatComputerSource {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
-        [String]
+        [Int]
         $ComputerID,
 
         # Which source should be updated?
@@ -16,6 +16,7 @@ function Update-ChocoStatComputerSource {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $SourceName,
 
@@ -23,6 +24,7 @@ function Update-ChocoStatComputerSource {
         [Parameter(
             ValueFromPipelineByPropertyName
         )]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $SourceURL,
 

@@ -56,6 +56,23 @@
         Write-PodeJsonResponse @($packages)
     }
 
+    Add-PodeRoute -Method Get -Path "/computers/:computerId/failedpackages" -Authentication "AuthenticateRead" -ScriptBlock {
+
+        $id = $WebEvent.Parameters['computerId']
+        try {
+            $packages = Get-ChocoStatComputerPackage -ComputerID $id | Select-Object PackageName,Version
+            if (!$packages) {
+                Set-PodeResponseStatus -Code 404 -Description "No failed packages were found for computer with ID '$id'" -Exception $_ -NoErrorPage
+                return
+            }
+        } catch {
+            Set-PodeResponseStatus -Code 500 -Description "Error while retrieving failed packages for computer with id '$id'" -Exception $_ -NoErrorPage
+            return
+        }
+
+        Write-PodeJsonResponse @($packages)
+    }
+
     # get sources for single computer with id
     Add-PodeRoute -Method Get -Path "/computers/:computerId/sources" -Authentication "AuthenticateRead" -ScriptBlock {
 
@@ -91,6 +108,14 @@
 
                 if (-not $package.ContainsKey("PackageName") -or -not $package.ContainsKey("Version") ) {
                     Set-PodeResponseStatus -Code 400 -Description "Malformed package object ('PackageName' and 'Version' are required in '$($package)'" -NoErrorPage
+                    return
+                }
+            }
+
+            foreach ($package in $WebEvent.Data.FailedPackages) {
+
+                if (-not $package.ContainsKey("PackageName") -or -not $package.ContainsKey("Version") ) {
+                    Set-PodeResponseStatus -Code 400 -Description "Malformed failed package object ('PackageName' and 'Version' are required in '$($package)'" -NoErrorPage
                     return
                 }
             }
@@ -133,6 +158,20 @@
             }
         }
 
+        foreach ($package in $WebEvent.Data.FailedPackages) {
+            try {
+                if ( $package.FailedOn -is [DateTime] ) {
+                    Add-ChocoStatComputerFailedPackage -ComputerID $computer.ComputerId -PackageName $package.PackageName -Version $package.Version -FailedOn $package.FailedOn
+                } else {
+                    Add-ChocoStatComputerFailedPackage -ComputerID $computer.ComputerId -PackageName $package.PackageName -Version $package.Version
+                }
+            } catch {
+                Write-Host $_
+                Set-PodeResponseStatus -Code 500 -Description "Error while attaching failed package '$($package)' to new computer '$($WebEvent.Data.ComputerName)': $_" -Exception $_
+                return
+            }
+        }
+
         foreach ($source in $WebEvent.Data.Sources) {
             try {
                 Add-ChocoStatComputerSource -ComputerID $computer.ComputerId @source
@@ -144,7 +183,7 @@
         }
 
         # fetch result back from database and return it to client
-        $computer = Get-ChocoStatComputer -ComputerID $computer.ComputerId -Packages -Sources
+        $computer = Get-ChocoStatComputer -ComputerID $computer.ComputerId -Packages -Sources -FailedPackages
 
         # Add secret to computer result so client can save it
         $computer | Add-Member -MemberType NoteProperty -Name "Secret" -Value $ComputerSecret
@@ -184,6 +223,14 @@
 
                     if (-not $package.ContainsKey("PackageName") -or -not $package.ContainsKey("Version") ) {
                         Set-PodeResponseStatus -Code 400 -Description "Malformed package object ('PackageName' and 'Version' are required in '$($package)'" -NoErrorPage
+                        return
+                    }
+                }
+
+                foreach ($package in $WebEvent.Data.FailedPackages) {
+
+                    if (-not $package.ContainsKey("PackageName") -or -not $package.ContainsKey("Version") ) {
+                        Set-PodeResponseStatus -Code 400 -Description "Malformed failed package object ('PackageName' and 'Version' are required in '$($package)'" -NoErrorPage
                         return
                     }
                 }
@@ -235,6 +282,33 @@
             } catch {
                 Write-Host $_
                 Set-PodeResponseStatus -Code 500 -Description "Error while removing packages not installed anymore" -Exception $_ -NoErrorPage
+                return
+            }
+
+            # update all failed packages from json object
+            foreach ($package in $WebEvent.Data.FailedPackages) {
+                try {
+                    Update-ChocoStatComputerFailedPackage -ComputerId $computer.ComputerID -PackageName $package.PackageName -Version $package.Version # TODO FailedOn
+                } catch {
+                    Write-Host $_
+                    Set-PodeResponseStatus -Code 500 -Description "Error while attaching failed package '$($package)' to new computer '$id'" -Exception $_ -NoErrorPage
+                    return
+                }
+            }
+
+            try {
+                # remove failed packages from computer which are missing in json object
+                $currentPackages = $computer.FailedPackages.PackageName
+                $futurePackages = $WebEvent.Data.FailedPackages.PackageName
+
+                if ($currentPackages) {
+                    Compare-Object $currentPackages $futurePackages | Where-Object { $_.SideIndicator -eq "<=" } | ForEach-Object {
+                        Remove-ChocoStatComputerFailedPackage -ComputerID $computer.ComputerID -PackageName $_.InputObject -Confirm:$False
+                    }
+                }
+            } catch {
+                Write-Host $_
+                Set-PodeResponseStatus -Code 500 -Description "Error while removing failed packages not failed anymore" -Exception $_ -NoErrorPage
                 return
             }
 

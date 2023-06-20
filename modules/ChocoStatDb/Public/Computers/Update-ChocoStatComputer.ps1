@@ -26,6 +26,7 @@ function Update-ChocoStatComputer {
 
         # New name of the computer. Can be anything you want but should be the FQDN of the computer
         [Parameter()]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $ComputerName,
 

@@ -19,6 +19,7 @@ function New-ChocoStatComputer {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $ComputerName,
 

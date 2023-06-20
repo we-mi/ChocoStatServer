@@ -1,21 +1,21 @@
-function Remove-ChocoStatComputerPackage {
+function Remove-ChocoStatComputerFailedPackage {
     <#
     .SYNOPSIS
-        Removes a package from a computer from the database
+        Removes a FailedPackage from a computer from the database
     .DESCRIPTION
-        Removes a package from a computer from the database. You will need the ComputerID, have a look at 'Get-ChocoStatComputer'. You can pipe the output from Get-ChocoStatComputer to this cmdlet.
+        Removes a FailedPackage from a computer from the database. You will need the ComputerID, have a look at 'Get-ChocoStatComputer'. You can pipe the output from Get-ChocoStatComputer to this cmdlet.
     .NOTES
-        This cmdlet does not check if the package was linked to the computer beforehand
+        This cmdlet does not check if the FailedPackage was linked to the computer beforehand
     .EXAMPLE
-        Remove-ChocoStatComputerPackage -ComputerID 5 -PackageName "firefox"
+        Remove-ChocoStatComputerFailedPackage -ComputerID 5 -PackageName "firefox"
 
         Removes firefox from computer with ID 5
     .EXAMPLE
-        Remove-ChocoStatComputerPackage -ComputerName "foo.example.org" -PackageName "firefox"
+        Remove-ChocoStatComputerFailedPackage -ComputerName "foo.example.org" -PackageName "firefox"
 
         Removes firefox from computer with name "foo.example.org"
     .EXAMPLE
-        Get-ChocoStatComputer -ComputerName "%.example.org" | Remove-ChocoStatComputerPackage -PackageName "firefox"
+        Get-ChocoStatComputer -ComputerName "%.example.org" | Remove-ChocoStatComputerFailedPackage -PackageName "firefox"
 
         Removes firefox from all computers which names end with '.example.org'
     #>
@@ -24,7 +24,7 @@ function Remove-ChocoStatComputerPackage {
     [OutputType([Object])]
 
     param (
-        # ComputerID to remove the package from
+        # ComputerID to remove the FailedPackage from
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -32,7 +32,7 @@ function Remove-ChocoStatComputerPackage {
         [Int[]]
         $ComputerID,
 
-        # Package to remove from computer
+        # FailedPackage to remove from computer
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -57,7 +57,7 @@ function Remove-ChocoStatComputerPackage {
 
     process {
 
-        $Query = "DELETE FROM Computers_Packages WHERE PackageName=@PackageName"
+        $Query = "DELETE FROM Computers_FailedPackages WHERE PackageName=@PackageName"
 
         $QueryIDs = [array]($ComputerID | ForEach-Object { " ComputerID=$_" })
 
@@ -69,14 +69,14 @@ function Remove-ChocoStatComputerPackage {
 
         $Query += ";"
 
-        Write-Verbose "Remove-ChocoStatComputerPackage: Execute SQL Query: $Query"
+        Write-Verbose "Remove-ChocoStatComputerFailedPackage: Execute SQL Query: $Query"
 
         if ($WhatIf.IsPresent) {
-            Write-Host -ForegroundColor Magenta "WhatIf: Would remove package '$PackageName' from computer with IDs '$($ComputerIDs -join ',')'"
+            Write-Host -ForegroundColor Magenta "WhatIf: Would remove FailedPackage '$PackageName' from computer with IDs '$($ComputerIDs -join ',')'"
         } else {
             $GoAhead = $False
             if ($Confirm) {
-                $answer = Read-Host -Prompt "Remove package '$PackageName' from computer with IDs '$($ComputerID -join ',')' from database? (y/N)"
+                $answer = Read-Host -Prompt "Remove FailedPackage '$PackageName' from computer with IDs '$($ComputerID -join ',')' from database? (y/N)"
                 if ($answer -eq "y") { $GoAhead = $True }
             } else { $GoAhead = $True }
 
@@ -85,7 +85,7 @@ function Remove-ChocoStatComputerPackage {
                     PackageName = $PackageName
                 }
             } else {
-                Write-Host -ForegroundColor Magenta "You chose not to remove the package from the computers"
+                Write-Host -ForegroundColor Magenta "You chose not to remove the FailedPackage from the computers"
             }
         }
     }

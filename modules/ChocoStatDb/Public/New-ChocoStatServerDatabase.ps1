@@ -34,6 +34,9 @@ function New-ChocoStatServerDatabase {
 
             $Query = "CREATE TABLE Computers_Packages (ComputerID INTEGER NOT NULL, PackageName varchar(255) NOT NULL, Version varchar(255) NOT NULL, Parameters varchar(255) NULL, InstalledOn varchar(255) NULL, PRIMARY KEY (ComputerID, PackageName) );"
             Invoke-SqliteQuery -Query $Query -Database $File
+
+            $Query = "CREATE TABLE Computers_FailedPackages (ComputerID INTEGER NOT NULL, PackageName varchar(255) NOT NULL, Version varchar(255) NOT NULL, Parameters varchar(255) NULL, FailedOn varchar(255) NULL, PRIMARY KEY (ComputerID, PackageName) );"
+            Invoke-SqliteQuery -Query $Query -Database $File
         }
 
         if ( (Test-Path -Path $File) -eq $False) {

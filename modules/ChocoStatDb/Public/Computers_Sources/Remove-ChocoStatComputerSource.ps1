@@ -29,7 +29,7 @@ function Remove-ChocoStatComputerSource {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
-        [String[]]
+        [Int[]]
         $ComputerID,
 
         # Source to remove from computer
@@ -37,6 +37,7 @@ function Remove-ChocoStatComputerSource {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $SourceName,
 

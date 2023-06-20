@@ -102,6 +102,11 @@ FunctionsToExport = @(
     "Remove-ChocoStatComputerPackage"
     "Update-ChocoStatComputerPackage"
 
+    "Get-ChocoStatComputerFailedPackage"
+    "Add-ChocoStatComputerFailedPackage"
+    "Remove-ChocoStatComputerFailedPackage"
+    "Update-ChocoStatComputerFailedPackage"
+
     "Get-ChocoStatComputerSource"
     "Add-ChocoStatComputerSource"
     "Remove-ChocoStatComputerSource"

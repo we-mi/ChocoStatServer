@@ -23,7 +23,7 @@ function Add-ChocoStatComputerPackage {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
-        [String]
+        [Int]
         $ComputerID,
 
         # A PackageName which should be added to the computer
@@ -31,6 +31,7 @@ function Add-ChocoStatComputerPackage {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $PackageName,
 
@@ -39,17 +40,18 @@ function Add-ChocoStatComputerPackage {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $Version,
 
         # The parameters with which the package was installed
         [Parameter()]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $Parameters,
 
         # The date the package was installed or updated to
         [Parameter()]
-        [AllowNull()]
         [datetime]
         $InstalledOn = "01.01.1970 00:00:00",
 

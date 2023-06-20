@@ -21,7 +21,7 @@ function Add-ChocoStatComputerSource {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
-        [String]
+        [Int]
         $ComputerID,
 
         # A SourceName which should be added to the computer
@@ -29,6 +29,7 @@ function Add-ChocoStatComputerSource {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $SourceName,
 
@@ -37,6 +38,7 @@ function Add-ChocoStatComputerSource {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $SourceURL,
 

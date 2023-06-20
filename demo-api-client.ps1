@@ -263,6 +263,16 @@ function Start-Choco { # implement the pschoco module from https://gitlab.com/Pa
                     & $ChocoEXE $command @options
                 }
             }
+
+            '^(failed)' {
+                Get-ChildItem -Directory -Path (Join-Path $env:ProgramData "chocolatey/lib-bad") | ForEach-Object {
+                    [PSCustomObject]@{
+                        PackageName = $_.Name
+                        Version = ([xml](Get-Content -Path (Join-Path $_.Fullname "$($_.Name).nuspec"))).package.metadata.version
+                        FailedOn = (Get-Item -Path (Join-Path $_.Fullname "$($_.Name).nupkg")).CreationTime
+                    }
+                }
+            }
             Default {
                 & $ChocoEXE $command @options
             }
@@ -285,6 +295,7 @@ $Headers = @{
 $Body = @{
     ComputerName = $env:COMPUTERNAME
     Packages = Start-Choco -command "list" -Options "--lo"
+    FailedPackages = Start-Choco -command "failed"
     Sources = Start-Choco -command "source" | Select-Object SourceName,
                             @{N='SourceURL';E={$_.Url}},
                             @{N='Enabled';E={$_.Enabled}},

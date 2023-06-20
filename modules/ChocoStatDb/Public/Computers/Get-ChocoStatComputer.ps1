@@ -37,8 +37,7 @@ function Get-ChocoStatComputer {
             ParameterSetName = "ComputerID",
             ValueFromPipelineByPropertyName
         )]
-        [ValidateNotNullOrEmpty()]
-        [String[]]
+        [Int[]]
         $ComputerID,
 
         # One or more ComputerNames to search for (can contain SQL wildcards)
@@ -46,14 +45,19 @@ function Get-ChocoStatComputer {
             ParameterSetName = "ComputerName",
             ValueFromPipelineByPropertyName
         )]
-        [ValidateNotNullOrEmpty()]
+        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String[]]
-        $ComputerName=@('%'),
+        $ComputerName,
 
         # Should the search include package information for computers?
         [Parameter()]
         [switch]
         $Packages,
+
+        # Should the search include failed package information for computers?
+        [Parameter()]
+        [switch]
+        $FailedPackages,
 
         # Should the search include source information for computers?
         [Parameter()]
@@ -90,6 +94,12 @@ function Get-ChocoStatComputer {
         if ($Packages.IsPresent) {
             foreach ($computer in $result) {
                 $computer | Add-Member -MemberType NoteProperty -Name Packages -Value (Get-ChocoStatComputerPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version,InstalledOn)
+            }
+        }
+
+        if ($FailedPackages.IsPresent) {
+            foreach ($computer in $result) {
+                $computer | Add-Member -MemberType NoteProperty -Name FailedPackages -Value (Get-ChocoStatComputerFailedPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version,FailedOn)
             }
         }
 
