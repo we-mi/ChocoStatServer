@@ -137,6 +137,30 @@
         # if we got to this point we can import a new computer and hopefully attach packages and sources to it without getting syntax errors
         try {
             $ComputerSecret = Get-RandomPassword -Length 64
+
+            $computer = Get-ChocoStatComputer -ComputerName $WebEvent.Data.ComputerName
+            if ($computer) {
+                # The computer is already present. New-ChocoStatComputer will fail, but if the "Force"-Parameter was specified AND we have sufficient permissions, we will delete the current object and create a completly new object
+
+                if ($WebEvent.Data.Force -eq $True) {
+
+                    $config = Get-PodeConfig
+                    $APITokenObject = Get-ChocoStatAPIToken -APIToken $WebEvent.Request.Headers.'X-API-KEY'
+
+                    if ($APITokenObject.Type -match $config.ComputerOverwrite) {
+                        $computer | Remove-ChocoStatComputer -Confirm $false
+                    } else {
+                        Write-Host "You specified the 'Force'-Parameter but do not have sufficient permissions to overwrite the computerobject with the name '$($WebEvent.Data.ComputerName)'"
+                        Set-PodeResponseStatus -Code 403 -Description "You specified the 'Force'-Parameter but do not have sufficient permissions to overwrite the computerobject with the name '$($WebEvent.Data.ComputerName)'" -NoErrorPage
+                        return
+                    }
+
+                } else {
+                    Write-Host "An computerobject with the name '$($WebEvent.Data.ComputerName)' is already present. Use the 'Force'-Parameter with sufficient permissions to recreate it. May the force be with you."
+                    Set-PodeResponseStatus -Code 500 -Description "An computerobject with the name '$($WebEvent.Data.ComputerName)' is already present. Use the 'Force'-Parameter with sufficient permissions to recreate it. May the force be with you." -NoErrorPage
+                    return
+                }
+            }
             $computer = New-ChocoStatComputer -ComputerName $WebEvent.Data.ComputerName -Secret $ComputerSecret -PassThru
         } catch {
             Write-Host $_
