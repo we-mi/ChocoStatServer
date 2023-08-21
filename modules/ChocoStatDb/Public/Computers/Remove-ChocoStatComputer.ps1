@@ -40,7 +40,7 @@ function Remove-ChocoStatComputer {
     process {
 
         foreach ($singleComputer in $ComputerID) {
-            $Query = "DELETE FROM Computers WHERE ComputerID=@singleComputer; DELETE FROM Computers_Packages WHERE ComputerID=@singleComputer; DELETE FROM Computers_FailedPackages WHERE ComputerID=@singleComputer; DELETE FROM Computers_Sources WHERE ComputerID=@singleComputer;"
+            $Query = "DELETE FROM Computers WHERE ComputerID=@singleComputer; DELETE FROM Computers_Packages WHERE ComputerID=@singleComputer; DELETE FROM Computers_FailedPackages WHERE ComputerID=@singleComputer; DELETE FROM Computers_Sources WHERE ComputerID=@singleComputer; DELETE FROM ComputerPasswords WHERE ComputerID=@singleComputer"
 
             Write-Verbose "Remove-ChocoStatComputer: Execute SQL Query: $Query"
 
