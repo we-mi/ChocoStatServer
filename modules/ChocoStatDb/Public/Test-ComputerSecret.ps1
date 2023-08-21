@@ -40,7 +40,7 @@ function Test-ComputerSecret {
         $Query = "SELECT HashedPassword FROM ComputerPasswords WHERE ComputerID = @ComputerID AND HashedPassword = @HashedPassword;"
         $results = Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
             ComputerID = $ComputerID
-            HashedPassword = Get-Hash -InputString $Secret
+            HashedPassword = $Secret
         }
 
         if ($results.Count -eq 1) {
