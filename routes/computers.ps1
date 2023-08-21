@@ -38,6 +38,11 @@
 
     }
 
+    Add-PodeRoute -Method Post -Path "/computers/:computerId/self" -Authentication "AuthenticateSelf" -ScriptBlock {
+        # test authentication for own client. The following code is only executed when "AuthenticateSelf"-Method succeeded
+        Write-PodeJsonResponse @{Authenticated = $True}
+    }
+
     # get packages for single computer with id
     Add-PodeRoute -Method Get -Path "/computers/:computerId/packages" -Authentication "AuthenticateRead" -ScriptBlock {
 
@@ -375,7 +380,7 @@
     }
 
     # Remove a computer
-    Add-PodeRoute -Method Delete -Path "/computers/:computerId" -Authentication "AuthenticateAdmin" -ScriptBlock {
+    Add-PodeRoute -Method Delete -Path "/computers/:computerId" -Authentication "AuthenticateWrite" -ScriptBlock {
 
         $id = $WebEvent.Parameters['computerId']
         try {
