@@ -5,7 +5,10 @@
 $config = Get-PodeConfig
 $env:ChocoStatDbFile = $config.Database
 
-Add-PodeEndpoint -Address * -Port $config.port -Protocol Https -SelfSigned
+# There seems to be a bug in the https implementation
+# PS 5.1 Clients can only connect once. All further requests will timeout.
+# PS 7 Clients can interact normally through https.
+Add-PodeEndpoint -Address * -Port $config.port -Protocol Http #s -SelfSigned
 
 #Enable-PodeSessionMiddleware -Duration 120 -Extend -UseHeaders
 
@@ -71,6 +74,19 @@ New-PodeAuthScheme -ApiKey | Add-PodeAuth -Name 'AuthenticateAdminOrSelf' -Sessi
     return @{ Code = 403; Message = "Forbidden" }
 }
 
+New-PodeAuthScheme -ApiKey | Add-PodeAuth -Name 'AuthenticateSelf' -Sessionless -ScriptBlock {
+    param($APIToken)
+
+	Write-Host $WebEvent.Data.Secret
+    $result = Test-ComputerSecret -ComputerID $WebEvent.Parameters['computerId'] -Secret $WebEvent.Data.Secret
+    if ( $null -ne $result ) {
+        return @{ User = $result }
+    }
+
+
+    return @{ Code = 403; Message = "Forbidden" }
+}
+
 Register-PodeEvent -Type Start -Name 'start' -ScriptBlock {
 
     Write-Host "Started ChocoStat-API-Server server on: $(Get-Date)"
@@ -85,4 +101,4 @@ Use-PodeRoutes
 
 New-PodeLoggingMethod -Terminal | Enable-PodeRequestLogging
 
-#New-PodeLoggingMethod -Terminal | Enable-PodeErrorLogging -Levels Error, Warning, Informational, Verbose, Debug
+New-PodeLoggingMethod -Terminal | Enable-PodeErrorLogging -Levels Error, Warning, Informational, Verbose, Debug
