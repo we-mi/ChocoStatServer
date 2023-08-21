@@ -38,7 +38,6 @@ function Add-ChocoStatComputerSource {
             Mandatory,
             ValueFromPipelineByPropertyName
         )]
-        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $SourceURL,
 

@@ -24,7 +24,6 @@ function Update-ChocoStatComputerSource {
         [Parameter(
             ValueFromPipelineByPropertyName
         )]
-        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
         [String]
         $SourceURL,
 
