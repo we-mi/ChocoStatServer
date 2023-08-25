@@ -74,19 +74,30 @@ function Add-ChocoStatComputerPackage {
         }
 
         if ($ComputerObject.Packages.PackageName -contains $PackageName) {
-            Throw "Package '$PackageName' already attached to computer with ID '$ComputerID'"
+            Throw "Package '$PackageName' already attached to computer '$($ComputerObject.ComputerName)'"
         }
 
-        $Query = "INSERT INTO Computers_Packages (ComputerID, PackageName, Version, Parameters, InstalledOn) VALUES (@ComputerID, @PackageName, @Version, @Parameters, @InstalledOn)"
+
+        try {
+            $PackageObject = New-ChocoStatPackage -PackageName $PackageName -PassThru
+        } catch {
+            $PackageObject = Get-ChocoStatPackage -PackageName $PackageName
+        }
+
+        if ($null -eq $PackageObject) {
+            Throw "Could not create or retrieve information about package '$PackageName'"
+        }
+
+        $Query = "INSERT INTO Computers_Packages (ComputerID, PackageID, Version, Parameters, InstalledOn) VALUES (@ComputerID, @PackageID, @Version, @Parameters, @InstalledOn)"
         Write-Verbose "Add-ChocoStatComputerPackage: Execute SQL Query: $Query"
 
         if ($WhatIf.IsPresent) {
-            Write-Host -ForegroundColor Magenta "WhatIf: Would add package '$PackageName' to computer with ID '$ComputerID'"
+            Write-Host -ForegroundColor Magenta "WhatIf: Would add package '$PackageName' to computer '$($ComputerObject.ComputerName)'"
         } else {
 
             Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
                 ComputerID = $ComputerObject.ComputerID
-                PackageName = $PackageName
+                PackageID = $PackageObject.PackageID
                 Version = $Version
                 Parameters = $Parameters
                 InstalledOn = $InstalledOn

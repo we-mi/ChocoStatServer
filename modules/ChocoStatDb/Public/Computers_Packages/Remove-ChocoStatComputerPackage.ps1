@@ -4,8 +4,6 @@ function Remove-ChocoStatComputerPackage {
         Removes a package from a computer from the database
     .DESCRIPTION
         Removes a package from a computer from the database. You will need the ComputerID, have a look at 'Get-ChocoStatComputer'. You can pipe the output from Get-ChocoStatComputer to this cmdlet.
-    .NOTES
-        This cmdlet does not check if the package was linked to the computer beforehand
     .EXAMPLE
         Remove-ChocoStatComputerPackage -ComputerID 5 -PackageName "firefox"
 
@@ -57,35 +55,45 @@ function Remove-ChocoStatComputerPackage {
 
     process {
 
-        $Query = "DELETE FROM Computers_Packages WHERE PackageName=@PackageName"
+        $PackageObject = Get-ChocoStatPackage -PackageName $PackageName
 
-        $QueryIDs = [array]($ComputerID | ForEach-Object { " ComputerID=$_" })
+        if ($null -ne $PackageObject) {
 
-        if ($QueryIDs.Count -gt 0) {
-            $Query += " AND ("
-            $Query += $QueryIDs -join ' OR '
-            $Query += " )"
-        }
+            $Query = "DELETE FROM Computers_Packages WHERE PackageID=@PackageID"
 
-        $Query += ";"
+            $QueryIDs = [array]($ComputerID | ForEach-Object { " ComputerID=$_" })
 
-        Write-Verbose "Remove-ChocoStatComputerPackage: Execute SQL Query: $Query"
+            if ($QueryIDs.Count -gt 0) {
+                $Query += " AND ("
+                $Query += $QueryIDs -join ' OR '
+                $Query += " )"
+            }
 
-        if ($WhatIf.IsPresent) {
-            Write-Host -ForegroundColor Magenta "WhatIf: Would remove package '$PackageName' from computer with IDs '$($ComputerIDs -join ',')'"
-        } else {
-            $GoAhead = $False
-            if ($Confirm) {
-                $answer = Read-Host -Prompt "Remove package '$PackageName' from computer with IDs '$($ComputerID -join ',')' from database? (y/N)"
-                if ($answer -eq "y") { $GoAhead = $True }
-            } else { $GoAhead = $True }
+            $Query += ";"
 
-            if ($GoAhead) {
-                Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
-                    PackageName = $PackageName
-                }
+            Write-Verbose "Remove-ChocoStatComputerPackage: Execute SQL Query: $Query"
+
+            if ($WhatIf.IsPresent) {
+                Write-Host -ForegroundColor Magenta "WhatIf: Would remove package '$PackageName' from computer with IDs '$($ComputerIDs -join ',')'"
             } else {
-                Write-Host -ForegroundColor Magenta "You chose not to remove the package from the computers"
+                $GoAhead = $False
+                if ($Confirm) {
+                    $answer = Read-Host -Prompt "Remove package '$PackageName' from computer with IDs '$($ComputerID -join ',')' from database? (y/N)"
+                    if ($answer -eq "y") { $GoAhead = $True }
+                } else { $GoAhead = $True }
+
+                if ($GoAhead) {
+                    Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
+                        PackageID = $PackageObject.PackageID
+                    }
+                } else {
+                    Write-Host -ForegroundColor Magenta "You chose not to remove the package from the computers"
+                }
+            }
+
+            # check if the package is installed anywhere
+            if ( (Get-ChocoStatComputerPackage -PackageName $PackageName).Count -eq 0 ) {
+                Remove-ChocoStatPackage -PackageID $PackageObject.PackageID -Confirm:$false
             }
         }
     }

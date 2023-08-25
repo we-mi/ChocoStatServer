@@ -70,11 +70,11 @@ function Update-ChocoStatComputerPackage {
                 }
             }
 
-            $Query = "UPDATE Computers_Packages SET Version=@Version, Parameters=@Parameters, InstalledOn=@InstalledOn WHERE ComputerID=@ComputerID AND PackageName=@PackageName"
+            $Query = "UPDATE Computers_Packages SET Version=@Version, Parameters=@Parameters, InstalledOn=@InstalledOn WHERE ComputerID=@ComputerID AND PackageID=@PackageID"
 
             Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
                 ComputerID = $ComputerPackageObject.ComputerID
-                PackageName = $PackageName
+                PackageID = $ComputerPackageObject.PackageID
                 Version = $Version
                 Parameters = $Parameters
                 InstalledOn = $InstalledOn

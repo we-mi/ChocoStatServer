@@ -41,7 +41,7 @@ function Get-ChocoStatComputerPackage {
     begin {
         $DbFile = Get-ChocoStatDBFile
 
-        $Query = "SELECT Computers.ComputerName,Computers.ComputerID,PackageName,Version,Parameters,InstalledOn FROM Computers_Packages,Computers WHERE Computers_Packages.ComputerID=Computers.ComputerID"
+        $Query = "SELECT Computers.ComputerName,Computers.ComputerID,Packages.PackageName,Packages.PackageID,Version,Parameters,InstalledOn FROM Computers_Packages,Computers,Packages WHERE Computers_Packages.ComputerID=Computers.ComputerID AND Computers_Packages.PackageID=Packages.PackageID"
     }
 
     process {
@@ -53,7 +53,7 @@ function Get-ChocoStatComputerPackage {
         }
 
         if ($PackageName) {
-            $QueryFilterPackage += $PackageName | ForEach-Object { "Computers_Packages.PackageName LIKE '$_'" }
+            $QueryFilterPackage += $PackageName | ForEach-Object { "Packages.PackageName LIKE '$_'" }
         }
 
         if ($Version) {

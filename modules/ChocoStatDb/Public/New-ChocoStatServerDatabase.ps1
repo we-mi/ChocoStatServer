@@ -20,6 +20,12 @@ function New-ChocoStatServerDatabase {
             $Query = "CREATE TABLE Computers (ComputerID INTEGER NOT NULL PRIMARY KEY, ComputerName varchar(255) NOT NULL, LastContact DATETIME);"
             Invoke-SqliteQuery -Query $Query -Database $File
 
+            $Query = "CREATE TABLE Packages (PackageID INTEGER NOT NULL PRIMARY KEY, PackageName varchar(255) NOT NULL);"
+            Invoke-SqliteQuery -Query $Query -Database $File
+
+            $Query = "CREATE TABLE Sources (SourceID INTEGER NOT NULL PRIMARY KEY, SourceURL varchar(255) NOT NULL);"
+            Invoke-SqliteQuery -Query $Query -Database $File
+
             $Query = "CREATE TABLE ComputerPasswords (ComputerID INTEGER NOT NULL, HashedPassword varchar(128) NOT NULL, PRIMARY KEY (ComputerID, HashedPassword));"
             Invoke-SqliteQuery -Query $Query -Database $File
 
@@ -32,10 +38,10 @@ function New-ChocoStatServerDatabase {
             $Query = "CREATE TABLE APITokens (APIToken varchar(36) NOT NULL PRIMARY KEY, UserName varchar(36) NOT NULL, Lifetime INTEGER NOT NULL, Type varchar(25) NOT NULL, WhenCreated int(11) NOT NULL);"
             Invoke-SqliteQuery -Query $Query -Database $File
 
-            $Query = "CREATE TABLE Computers_Packages (ComputerID INTEGER NOT NULL, PackageName varchar(255) NOT NULL, Version varchar(255) NOT NULL, Parameters varchar(255) NULL, InstalledOn varchar(255) NULL, PRIMARY KEY (ComputerID, PackageName) );"
+            $Query = "CREATE TABLE Computers_Packages (ComputerID INTEGER NOT NULL, PackageID INTEGER NOT NULL, Version varchar(255) NOT NULL, Parameters varchar(255) NULL, InstalledOn varchar(255) NULL, PRIMARY KEY (ComputerID, PackageID) );"
             Invoke-SqliteQuery -Query $Query -Database $File
 
-            $Query = "CREATE TABLE Computers_FailedPackages (ComputerID INTEGER NOT NULL, PackageName varchar(255) NOT NULL, Version varchar(255) NOT NULL, Parameters varchar(255) NULL, FailedOn varchar(255) NULL, PRIMARY KEY (ComputerID, PackageName) );"
+            $Query = "CREATE TABLE Computers_FailedPackages (ComputerID INTEGER NOT NULL, PackageID INTEGER NOT NULL, Version varchar(255) NOT NULL, Parameters varchar(255) NULL, FailedOn varchar(255) NULL, PRIMARY KEY (ComputerID, PackageID) );"
             Invoke-SqliteQuery -Query $Query -Database $File
         }
 
