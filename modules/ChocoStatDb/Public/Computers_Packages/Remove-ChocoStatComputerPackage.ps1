@@ -92,7 +92,8 @@ function Remove-ChocoStatComputerPackage {
             }
 
             # check if the package is installed anywhere
-            if ( (Get-ChocoStatComputerPackage -PackageName $PackageName).Count -eq 0 ) {
+            $PackageCount = (Get-ChocoStatComputerPackage -PackageName $PackageName).Count + (Get-ChocoStatComputerFailedPackage -PackageName $PackageName).Count
+            if ( $PackageCount -eq 0 ) {
                 Remove-ChocoStatPackage -PackageID $PackageObject.PackageID -Confirm:$false
             }
         }

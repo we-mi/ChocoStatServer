@@ -77,7 +77,6 @@ function Add-ChocoStatComputerPackage {
             Throw "Package '$PackageName' already attached to computer '$($ComputerObject.ComputerName)'"
         }
 
-
         try {
             $PackageObject = New-ChocoStatPackage -PackageName $PackageName -PassThru
         } catch {

@@ -1,13 +1,13 @@
 function Get-ChocoStatComputerFailedPackage {
     <#
     .SYNOPSIS
-        Lists FailedPackages for one or more computers
+        Lists failed packages for one or more computers
     .DESCRIPTION
-        Lists FailedPackages for one or more computers. You can filter by ComputerID or Computername and PackageName
+        Lists failed packages for one or more computers. You can filter by ComputerID and PackageName
     .EXAMPLE
         Get-ChocoStatComputerFailedPackage -PackageName "vlc" -ComputerName '%.example.org'
 
-        Lists all computers whose names end with 'example.org' and have "vlc" installed
+        Lists all computers whose names end with 'example.org' and where "vlc" were tried to install but failed
     #>
 
     [CmdletBinding()]
@@ -41,19 +41,17 @@ function Get-ChocoStatComputerFailedPackage {
     begin {
         $DbFile = Get-ChocoStatDBFile
 
-        $Query = "SELECT Computers.ComputerName,Computers.ComputerID,PackageName,Version,Parameters,FailedOn FROM Computers_FailedPackages,Computers WHERE Computers_FailedPackages.ComputerID=Computers.ComputerID"
+        $Query = "SELECT Computers.ComputerName,Computers.ComputerID,Packages.PackageName,Packages.PackageID,Version,Parameters,FailedOn FROM Computers_FailedPackages,Computers,Packages WHERE Computers_FailedPackages.ComputerID=Computers.ComputerID AND Computers_FailedPackages.PackageID=Packages.PackageID"
     }
 
     process {
-
-        $QueryFilters = @()
 
         if ($ComputerID.Count -gt 0) {
             $QueryFilterComputer += $ComputerID | ForEach-Object { "Computers.ComputerID = $_" }
         }
 
         if ($PackageName) {
-            $QueryFilterFailedPackage += $PackageName | ForEach-Object { "Computers_FailedPackages.PackageName LIKE '$_'" }
+            $QueryFilterPackage += $PackageName | ForEach-Object { "Packages.PackageName LIKE '$_'" }
         }
 
         if ($Version) {
@@ -66,9 +64,9 @@ function Get-ChocoStatComputerFailedPackage {
             $Query += " ) "
         }
 
-        if ($QueryFilterFailedPackage.Count -gt 0) {
+        if ($QueryFilterPackage.Count -gt 0) {
             $Query += " AND ("
-            $Query += $QueryFilterFailedPackage -join ' OR '
+            $Query += $QueryFilterPackage -join ' OR '
             $Query += " ) "
         }
 
@@ -82,9 +80,7 @@ function Get-ChocoStatComputerFailedPackage {
 
         Write-Verbose "Get-ChocoStatComputerFailedPackage: Execute SQL Query: $Query"
 
-        Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
-            ComputerName = $ComputerName
-        }
+        Invoke-SqliteQuery -Query $Query -Database $DbFile
     }
 
 }

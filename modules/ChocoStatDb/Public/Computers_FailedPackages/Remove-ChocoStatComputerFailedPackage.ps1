@@ -1,30 +1,20 @@
 function Remove-ChocoStatComputerFailedPackage {
     <#
     .SYNOPSIS
-        Removes a FailedPackage from a computer from the database
+        Removes a failed package from a computer from the database
     .DESCRIPTION
-        Removes a FailedPackage from a computer from the database. You will need the ComputerID, have a look at 'Get-ChocoStatComputer'. You can pipe the output from Get-ChocoStatComputer to this cmdlet.
-    .NOTES
-        This cmdlet does not check if the FailedPackage was linked to the computer beforehand
+        Removes a failed package from a computer from the database. You will need the ComputerID, have a look at 'Get-ChocoStatComputer'. You can pipe the output from Get-ChocoStatComputer to this cmdlet.
     .EXAMPLE
         Remove-ChocoStatComputerFailedPackage -ComputerID 5 -PackageName "firefox"
 
-        Removes firefox from computer with ID 5
-    .EXAMPLE
-        Remove-ChocoStatComputerFailedPackage -ComputerName "foo.example.org" -PackageName "firefox"
-
-        Removes firefox from computer with name "foo.example.org"
-    .EXAMPLE
-        Get-ChocoStatComputer -ComputerName "%.example.org" | Remove-ChocoStatComputerFailedPackage -PackageName "firefox"
-
-        Removes firefox from all computers which names end with '.example.org'
+        Removes firefox from computer with ID 5 as a failed package
     #>
 
     [CmdletBinding()]
     [OutputType([Object])]
 
     param (
-        # ComputerID to remove the FailedPackage from
+        # ComputerID to remove the package from
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -32,7 +22,7 @@ function Remove-ChocoStatComputerFailedPackage {
         [Int[]]
         $ComputerID,
 
-        # FailedPackage to remove from computer
+        # Package to remove from computer
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -57,35 +47,46 @@ function Remove-ChocoStatComputerFailedPackage {
 
     process {
 
-        $Query = "DELETE FROM Computers_FailedPackages WHERE PackageName=@PackageName"
+        $PackageObject = Get-ChocoStatPackage -PackageName $PackageName
 
-        $QueryIDs = [array]($ComputerID | ForEach-Object { " ComputerID=$_" })
+        if ($null -ne $PackageObject) {
 
-        if ($QueryIDs.Count -gt 0) {
-            $Query += " AND ("
-            $Query += $QueryIDs -join ' OR '
-            $Query += " )"
-        }
+            $Query = "DELETE FROM Computers_FailedPackages WHERE PackageID=@PackageID"
 
-        $Query += ";"
+            $QueryIDs = [array]($ComputerID | ForEach-Object { " ComputerID=$_" })
 
-        Write-Verbose "Remove-ChocoStatComputerFailedPackage: Execute SQL Query: $Query"
+            if ($QueryIDs.Count -gt 0) {
+                $Query += " AND ("
+                $Query += $QueryIDs -join ' OR '
+                $Query += " )"
+            }
 
-        if ($WhatIf.IsPresent) {
-            Write-Host -ForegroundColor Magenta "WhatIf: Would remove FailedPackage '$PackageName' from computer with IDs '$($ComputerIDs -join ',')'"
-        } else {
-            $GoAhead = $False
-            if ($Confirm) {
-                $answer = Read-Host -Prompt "Remove FailedPackage '$PackageName' from computer with IDs '$($ComputerID -join ',')' from database? (y/N)"
-                if ($answer -eq "y") { $GoAhead = $True }
-            } else { $GoAhead = $True }
+            $Query += ";"
 
-            if ($GoAhead) {
-                Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
-                    PackageName = $PackageName
-                }
+            Write-Verbose "Remove-ChocoStatComputerFailedPackage: Execute SQL Query: $Query"
+
+            if ($WhatIf.IsPresent) {
+                Write-Host -ForegroundColor Magenta "WhatIf: Would remove failed package '$PackageName' from computer with IDs '$($ComputerIDs -join ',')'"
             } else {
-                Write-Host -ForegroundColor Magenta "You chose not to remove the FailedPackage from the computers"
+                $GoAhead = $False
+                if ($Confirm) {
+                    $answer = Read-Host -Prompt "Remove failed package '$PackageName' from computer with IDs '$($ComputerID -join ',')' from database? (y/N)"
+                    if ($answer -eq "y") { $GoAhead = $True }
+                } else { $GoAhead = $True }
+
+                if ($GoAhead) {
+                    Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
+                        PackageID = $PackageObject.PackageID
+                    }
+                } else {
+                    Write-Host -ForegroundColor Magenta "You chose not to remove the package from the computers"
+                }
+            }
+
+            # check if the package is installed anywhere
+            $PackageCount = (Get-ChocoStatComputerPackage -PackageName $PackageName).Count + (Get-ChocoStatComputerFailedPackage -PackageName $PackageName).Count
+            if ( $PackageCount -eq 0 ) {
+                Remove-ChocoStatPackage -PackageID $PackageObject.PackageID -Confirm:$false
             }
         }
     }

@@ -3,7 +3,7 @@ function Update-ChocoStatComputerFailedPackage {
     [OutputType([Object[]])]
 
     param (
-        # ComputerID for adding the FailedPackages
+        # ComputerID for adding the failed packages
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -11,7 +11,7 @@ function Update-ChocoStatComputerFailedPackage {
         [Int]
         $ComputerID,
 
-        # A FailedPackageName which should be added to the computer
+        # A PackageName which should be added to the computer as a failed package
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -20,7 +20,7 @@ function Update-ChocoStatComputerFailedPackage {
         [String]
         $PackageName,
 
-        # The version of the FailedPackage
+        # The version of the package
         [Parameter(
             Mandatory,
             ValueFromPipelineByPropertyName
@@ -63,18 +63,19 @@ function Update-ChocoStatComputerFailedPackage {
             }
 
             if ($null -eq $FailedOn) {
-                if ($null -eq $ComputerFailedPackageObject.FailedOn) {
+                if ($null -eq $ComputerFailedPackageObject.InstalledOn) {
                     $FailedOn = [datetime]"1970-01-01"
                 } else {
-                    $FailedOn = $ComputerFailedPackageObject.FailedOn
+                    $FailedOn = $ComputerFailedPackageObject.InstalledOn
                 }
             }
 
-            $Query = "UPDATE Computers_FailedPackages SET Version=@Version, Parameters=@Parameters, FailedOn=@FailedOn WHERE ComputerID=@ComputerID AND PackageName=@PackageName"
+            $Query = "UPDATE Computers_FailedPackages SET Version=@Version, Parameters=@Parameters, FailedOn=@FailedOn WHERE ComputerID=@ComputerID AND PackageID=@PackageID"
+            Write-Verbose "Update-ChocoStatComputerFailedPackage: Execute SQL Query: $Query"
 
             Invoke-SqliteQuery -Query $Query -Database $DbFile -SqlParameters @{
                 ComputerID = $ComputerFailedPackageObject.ComputerID
-                PackageName = $PackageName
+                PackageID = $ComputerFailedPackageObject.PackageID
                 Version = $Version
                 Parameters = $Parameters
                 FailedOn = $FailedOn
@@ -91,7 +92,7 @@ function Update-ChocoStatComputerFailedPackage {
             }
 
             if ($null -ne $FailedOn) {
-                $splat.FailedOn = $FailedOn
+                $splat.InstalledOn = $FailedOn
             }
 
             Add-ChocoStatComputerFailedPackage @splat
