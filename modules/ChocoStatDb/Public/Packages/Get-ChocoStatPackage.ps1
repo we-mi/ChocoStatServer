@@ -53,7 +53,7 @@ function Get-ChocoStatPackage {
         # Should the search include computer where this package failed to install?
         [Parameter()]
         [switch]
-        $FailedPackages
+        $FailedComputers
     )
 
     begin {
@@ -83,17 +83,21 @@ function Get-ChocoStatPackage {
         $result = Invoke-SqliteQuery -Query $Query -Database $DbFile | Select-Object PackageID,PackageName
 
         if ($Computers.IsPresent) {
-            # TODO
-           <#  foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name Packages -Value (Get-ChocoStatComputerPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version,InstalledOn)
-            } #>
+
+            $ComputerPackages = Get-ChocoStatComputerPackage -PackageName $result.PackageName
+
+            foreach ($package in $result) {
+                $package | Add-Member -MemberType NoteProperty -Name Computers -Value ($ComputerPackages | Where-Object { $_.PackageName -eq $package.PackageName } | Select-Object ComputerName,Version,InstalledOn)
+            }
         }
 
-        if ($FailedPackages.IsPresent) {
-            # TODO
-            <# foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name FailedPackages -Value (Get-ChocoStatComputerFailedPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version,FailedOn)
-            } #>
+        if ($FailedComputers.IsPresent) {
+
+            $ComputerFailedPackages = Get-ChocoStatComputerFailedPackage -PackageName $result.PackageName
+
+            foreach ($package in $result) {
+                $package | Add-Member -MemberType NoteProperty -Name FailedComputers -Value ($ComputerFailedPackages | Where-Object { $_.PackageName -eq $package.PackageName } | Select-Object ComputerName,Version,FailedOn)
+            }
         }
 
         return $result
