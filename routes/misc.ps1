@@ -4,7 +4,9 @@
     Add-PodeRoute -Method Get -Path "/stat" -Authentication "AuthenticateRead" -ScriptBlock {
 
         try {
-            $computers = Get-ChocoStatComputer -Packages
+            $computers = Get-ChocoStatComputer
+            $computerPackages = Get-ChocoStatComputerPackage
+            $packages = Get-ChocoStatPackage
             $users = Get-ChocoStatUser
 
         } catch {
@@ -14,8 +16,8 @@
 
         $stats = [PSCustomObject]@{
             computers = $computers.Count
-            totalPackages = $computers.Packages.Count
-            uniquePackages = ($computers.Packages | Sort-Object -Property PackageName -Unique).Count
+            totalPackages = $computersPackages.Count
+            uniquePackages = $packages.Count
             users = $users.Count
             lastComputerContact = $computers | Sort-Object -Property LastContact -Descending | Select-Object -First 1 -ExpandProperty LastContact
         }

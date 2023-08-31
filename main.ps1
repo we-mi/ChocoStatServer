@@ -91,10 +91,10 @@ Register-PodeEvent -Type Start -Name 'start' -ScriptBlock {
 
     Write-Host "Started ChocoStat-API-Server server on: $(Get-Date)"
 
-    $computers = Get-ChocoStatComputer -Packages
-    $totalPackages = $computers.Packages.Count
-    $uniquePackages = ($computers.Packages | Sort-Object -Property PackageName -Unique).Count
-    Write-Host "Currently hosting infos about $($computers.Count) computers with a total of $($totalPackages) package installations and $($uniquePackages) packages"
+    $computers = Get-ChocoStatComputer
+    $computerPackages = Get-ChocoStatComputerPackage
+    $packages = Get-ChocoStatPackage
+    Write-Host "Currently hosting infos about $($computers.Count) computers with a total of $($computerPackages.Count) package installations and $($packages.Count) packages"
 }
 
 Use-PodeRoutes

@@ -1,10 +1,10 @@
 ﻿Add-PodeRouteGroup -Path (Get-PodeConfig).BaseUrl -Routes {
 
-    # get all computers including packages and sources
+    # get all computers
     Add-PodeRoute -Method Get -Path "/computers" -Authentication "AuthenticateRead" -ScriptBlock {
 
         try {
-            $computers = Get-ChocoStatComputer -Packages -Sources
+            $computers = Get-ChocoStatComputer
 
             if (!$computers) {
                 Set-PodeResponseStatus -Code 404 -Description "No computer was registered yet" -Exception $_ -NoErrorPage
