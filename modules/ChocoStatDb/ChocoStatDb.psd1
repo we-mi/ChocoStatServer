@@ -12,7 +12,7 @@
 RootModule = '.\ChocoStatDb.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.1'
+ModuleVersion = '0.1.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -85,7 +85,6 @@ FunctionsToExport = @(
 
     "Get-ChocoStatPackage"
     "New-ChocoStatPackage"
-    "Update-ChocoStatPackage"
     "Remove-ChocoStatPackage"
 
     "Get-ChocoStatUser"

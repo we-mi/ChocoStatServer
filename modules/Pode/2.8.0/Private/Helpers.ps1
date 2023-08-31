@@ -929,8 +929,10 @@ function Add-PodePSDrives
 function Import-PodeModules
 {
     # import other modules in the session
+    #Write-Host $PodeContext.Server.Modules.Values
     foreach ($path in $PodeContext.Server.Modules.Values) {
-        $null = Import-Module $path -DisableNameChecking -Scope Global -ErrorAction Stop
+        Write-Host "Try to import '$path'"
+        $null = Import-Module $path -DisableNameChecking -Scope Global -ErrorAction SilentlyContinue
     }
 }
 

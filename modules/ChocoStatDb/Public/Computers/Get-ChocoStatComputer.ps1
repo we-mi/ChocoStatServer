@@ -1,11 +1,13 @@
 function Get-ChocoStatComputer {
     <#
     .SYNOPSIS
-        Lists computers in the database depending on the filters
+        Lists computers in the ChocoStat-Database
     .DESCRIPTION
-        Lists computers in the database including packages and sources
+        Lists computers in the ChocoStat-Database depending on the filters. You can include packages, failed packages and sources which are attached to this computer
     .NOTES
-        The output can be filtered by one or more ComputerIDs _OR_ one or more ComputerNames which might contain SQL-Wildcards
+        The output can be filtered by one or more ComputerIDs *OR* one or more ComputerNames which might contain SQL-Wildcards
+    .LINK
+        https://github.com/we-mi/ChocoStatDb/blob/main/docs/Get-ChocoStatComputer.md
     .EXAMPLE
         Get-ChocoStatComputer
 
@@ -21,11 +23,15 @@ function Get-ChocoStatComputer {
     .EXAMPLE
         Get-ChocoStatComputer -ComputerName '%.example.org'
 
-        Lists all computers which ends with .example.org
+        Lists all computers which ends with `.example.org`
     .EXAMPLE
         Get-ChocoStatComputer -ComputerName '%.example.org','%foo%'
 
-        Lists all computers which ends with ".example.org" or which contains the word foo
+        Lists all computers which ends with `.example.org` or which contains the word `foo`
+    .EXAMPLE
+        Get-ChocoStatComputer -ComputerName '%.example.org' -Packages -FailedPackages -Sources
+
+        Lists all computers which ends with `.example.org` and also shows attached packages, failed packages and sources for these computers
     #>
 
     [CmdletBinding(DefaultParameterSetName="ComputerName")]
@@ -45,7 +51,7 @@ function Get-ChocoStatComputer {
             ParameterSetName = "ComputerName",
             ValueFromPipelineByPropertyName
         )]
-        [ValidateScript( { $_ -notmatch "[';`"``\/!§$%&()\[\]]" } ) ]
+        [ValidateScript( { $_ -match $Regex.PackageNameSQLWildcard } ) ]
         [String[]]
         $ComputerName,
 
@@ -62,53 +68,87 @@ function Get-ChocoStatComputer {
         # Should the search include source information for computers?
         [Parameter()]
         [switch]
-        $Sources
+        $Sources,
+
+        # Path to the SQLite-Database. Leave empty to let `Get-ChocoStatDBFile` search for it automatically
+        [Parameter()]
+        [System.IO.FileInfo]
+        $Database
     )
 
     begin {
-        $DbFile = Get-ChocoStatDBFile
-        $Query = "SELECT * FROM Computers"
+        if (-not $PSBoundParameters.ContainsKey("Database")) {
+            $DbFile = Get-ChocoStatDBFile
+        } else {
+            $DbFile = $Database
+        }
+
+        $Query = [System.Collections.ArrayList]@()
+        $null = $Query.Add("SELECT Computers.ComputerID,Computers.ComputerName,Computers.LastContact FROM Computers")
     }
 
     process {
 
-        $QueryFilters = @()
-        if ($ComputerID) {
-            $QueryFilters += $ComputerID | ForEach-Object { "ComputerID = $_" }
-        } elseif ($ComputerName) {
-            $QueryFilters += $ComputerName | ForEach-Object { "ComputerName LIKE '$_'" }
+        $QueryFilters = [System.Collections.ArrayList]@()
+
+        foreach ($singleComputerID in $ComputerID) {
+            $null = $QueryFilters.Add( "ComputerID = $singleComputerID" )
+        }
+
+        foreach ($singleComputerName in $ComputerName) {
+            $null = $QueryFilters.Add( "ComputerName LIKE '$singleComputerName'" )
         }
     }
 
     end {
         if ($QueryFilters.Count -gt 0) {
-            $Query += " WHERE "
-            $Query += $QueryFilters -join ' OR '
+            $null = $Query.Add(" WHERE ")
+            $null = $Query.Add($QueryFilters -join ' OR ')
         }
-        $Query += ";"
 
-        Write-Verbose "Get-ChocoStatComputer: Execute SQL Query: $Query"
+        $null = $Query.Add(";")
 
-        $result = Invoke-SqliteQuery -Query $Query -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}
+        $FullSQLQuery = $Query -join ''
+
+        Write-Debug "Get-ChocoStatComputer: Execute SQL Query: $FullSQLQuery"
+
+        $result = [System.Collections.ArrayList]::new()
+        $result.AddRange( (Invoke-SqliteQuery -Query $FullSQLQuery -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}) )
 
         if ($Packages.IsPresent) {
+            $ComputerPackages = [System.Collections.ArrayList]::new()
+            $ComputerPackages.AddRange( (Get-ChocoStatComputerPackage -ComputerID $result.ComputerID) )
+
+            $result | Add-Member -MemberType NoteProperty -Name Packages -Value $null
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name Packages -Value (Get-ChocoStatComputerPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version,InstalledOn)
+                $computer.Packages = $ComputerPackages.Where( { $_.ComputerID -eq $computer.ComputerID } ) | Select-Object PackageName,Version,InstalledOn
             }
         }
 
         if ($FailedPackages.IsPresent) {
+            $ComputerFailedPackages = [System.Collections.ArrayList]::new()
+            $ComputerFailedPackages.AddRange( (Get-ChocoStatComputerFailedPackage -ComputerID $result.ComputerID) )
+
+            $result | Add-Member -MemberType NoteProperty -Name FailedPackages -Value $null
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name FailedPackages -Value (Get-ChocoStatComputerFailedPackage -ComputerID $computer.ComputerID | Select-Object PackageName,Version,FailedOn)
+                $computer.FailedPackages = $ComputerFailedPackages.Where( { $_.ComputerID -eq $computer.ComputerID } ) | Select-Object PackageName,Version,FailedOn
             }
         }
 
         if ($Sources.IsPresent) {
+            $ComputerSources = [System.Collections.ArrayList]::new()
+            $ComputerSources.AddRange( (Get-ChocoStatComputerSource -ComputerID $result.ComputerID) )
+
+            $result | Add-Member -MemberType NoteProperty -Name Sources -Value $null
             foreach ($computer in $result) {
-                $computer | Add-Member -MemberType NoteProperty -Name Sources -Value (Get-ChocoStatComputerSource -ComputerID $computer.ComputerID | Select-Object SourceName,SourceURL,Enabled,Priority,ByPassProxy,SelfService,AdminOnly)
+                $computer.Sources = $ComputerSources.Where( { $_.ComputerID -eq $computer.ComputerID } ) | Select-Object SourceName,SourceURL,Enabled,Priority,ByPassProxy,SelfService,AdminOnly
             }
         }
 
-        return $result
+        if ($result.Count -eq 1) {
+            return ,@($result)
+        } else {
+            return $result
+        }
     }
 }

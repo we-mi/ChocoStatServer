@@ -53,7 +53,6 @@ PowerShellVersion = '7.0'
 # Modules that must be imported into the global environment prior to importing this module
 RequiredModules = @(
     ".\modules\ChocoStatDb\ChocoStatDb.psd1"
-    ".\modules\PSSQLite\PSSQLite.psd1"
     ".\modules\Pode\2.8.0\Pode.psd1"
 )
 
