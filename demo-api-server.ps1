@@ -25,6 +25,5 @@ if ( -not (Test-Path $env:ChocoStatDbFile) ) {
     }
 }
 
-Get-ChocoStatComputer -Packages
 
 Start-ChocoStatServer
