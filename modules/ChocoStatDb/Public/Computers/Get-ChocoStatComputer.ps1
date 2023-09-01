@@ -113,11 +113,15 @@ function Get-ChocoStatComputer {
         Write-Debug "Get-ChocoStatComputer: Execute SQL Query: $FullSQLQuery"
 
         $result = [System.Collections.ArrayList]::new()
-        $result.AddRange( (Invoke-SqliteQuery -Query $FullSQLQuery -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}) )
+        try {
+            $result.AddRange( (Invoke-SqliteQuery -Query $FullSQLQuery -Database $DbFile | Select-Object ComputerID,ComputerName,@{N='LastContact';E={ $_.LastContact.ToString() }}) )
+        } catch [System.ArgumentNullException] { <# this is fine #> }
 
         if ($Packages.IsPresent) {
             $ComputerPackages = [System.Collections.ArrayList]::new()
-            $ComputerPackages.AddRange( (Get-ChocoStatComputerPackage -ComputerID $result.ComputerID) )
+            try {
+                $ComputerPackages.AddRange( (Get-ChocoStatComputerPackage -ComputerID $result.ComputerID) )
+            } catch [System.ArgumentNullException] { <# this is fine #> }
 
             $result | Add-Member -MemberType NoteProperty -Name Packages -Value $null
             foreach ($computer in $result) {
@@ -127,7 +131,9 @@ function Get-ChocoStatComputer {
 
         if ($FailedPackages.IsPresent) {
             $ComputerFailedPackages = [System.Collections.ArrayList]::new()
-            $ComputerFailedPackages.AddRange( (Get-ChocoStatComputerFailedPackage -ComputerID $result.ComputerID) )
+            try {
+                $ComputerFailedPackages.AddRange( (Get-ChocoStatComputerFailedPackage -ComputerID $result.ComputerID) )
+            } catch [System.ArgumentNullException] { <# this is fine #> }
 
             $result | Add-Member -MemberType NoteProperty -Name FailedPackages -Value $null
             foreach ($computer in $result) {
@@ -137,7 +143,9 @@ function Get-ChocoStatComputer {
 
         if ($Sources.IsPresent) {
             $ComputerSources = [System.Collections.ArrayList]::new()
-            $ComputerSources.AddRange( (Get-ChocoStatComputerSource -ComputerID $result.ComputerID) )
+            try {
+                $ComputerSources.AddRange( (Get-ChocoStatComputerSource -ComputerID $result.ComputerID) )
+            } catch [System.ArgumentNullException] { <# this is fine #> }
 
             $result | Add-Member -MemberType NoteProperty -Name Sources -Value $null
             foreach ($computer in $result) {
