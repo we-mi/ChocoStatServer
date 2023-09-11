@@ -10,4 +10,29 @@
             Protocols = @('TLS', 'TLS11', 'TLS12')
         }
     }
+
+    Logging = @{
+
+        Terminal = @{
+            Requests = $True
+            Errors = $True
+        }
+
+        File = @{
+            Requests = $True
+            Errors = $True
+            RequestLog = "ChocoStatServer_Requests"
+            ErrorLog = "ChocoStatServer_Error"
+            DebugLog = "ChocoStatServer_Debug"
+        }
+
+        EventViewer = @{
+            Requests = $True
+            Errors = $True
+            EventLogName = "ChocoStatServer"
+            RequestSource = "ChocoStatServer_Requests"
+            ErrorSource = "ChocoStatServer_Error"
+            DebugSource = "ChocoStatServer_Debug"
+        }
+    }
 }

@@ -99,6 +99,43 @@ Register-PodeEvent -Type Start -Name 'start' -ScriptBlock {
 
 Use-PodeRoutes
 
-New-PodeLoggingMethod -Terminal | Enable-PodeRequestLogging
 
-New-PodeLoggingMethod -Terminal | Enable-PodeErrorLogging -Levels Error, Warning, Informational, Verbose, Debug
+New-PodeLoggingMethod -Terminal | Add-PodeLogger -Name "RequestsTerminal" -ScriptBlock { param($item) $item }
+New-PodeLoggingMethod -File -Name $config.Logging.File.RequestLog | Add-PodeLogger -Name "RequestsFile" -ScriptBlock { param($item) $item }
+New-PodeLoggingMethod -EventViewer -EventLogName $config.Logging.EventViewer.EventLogName -Source $config.Logging.EventViewer.RequestSource | Add-PodeLogger -Name "RequestsEventViewer" -ScriptBlock { param($item) $item }
+
+New-PodeLoggingMethod -Terminal | Add-PodeLogger -Name "ErrorsTerminal" -ScriptBlock { param($item) $item }
+New-PodeLoggingMethod -File -Name $config.Logging.File.ErrorLog | Add-PodeLogger -Name "ErrorsFile" -ScriptBlock { param($item) $item }
+New-PodeLoggingMethod -EventViewer -EventLogName $config.Logging.EventViewer.EventLogName -Source $config.Logging.EventViewer.ErrorSource | Add-PodeLogger -Name "ErrorsEventViewer" -ScriptBlock { param($item) $item }
+
+
+New-PodeLoggingMethod -Custom -ArgumentList $config -ScriptBlock {
+    param($item, $config)
+
+    if ($config.Logging.Terminal.Requests) {
+        Write-PodeLog -Name "RequestsTerminal" -InputObject $item
+    }
+    if ($config.Logging.File.Requests) {
+        Write-PodeLog -Name "RequestsFile" -InputObject $item
+    }
+    if ($config.Logging.EventViewer.Requests) {
+        Write-PodeLog -Name "RequestsEventViewer" -InputObject $item
+    }
+
+} | Enable-PodeRequestLogging
+
+New-PodeLoggingMethod -Custom -ArgumentList $config -ScriptBlock {
+    param($item, $config)
+
+    if ($config.Logging.Terminal.Requests) {
+        Write-PodeLog -Name "ErrorsTerminal" -InputObject $item
+    }
+    if ($config.Logging.File.Requests) {
+        Write-PodeLog -Name "ErrorsFile" -InputObject $item
+    }
+    if ($config.Logging.EventViewer.Requests) {
+        Write-PodeLog -Name "ErrorsEventViewer" -InputObject $item
+    }
+
+} | Enable-PodeErrorLogging
+
